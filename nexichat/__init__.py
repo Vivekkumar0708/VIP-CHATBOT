@@ -26,12 +26,10 @@ db = mongodb.Anonymous
 mongo = MongoClient(config.MONGO_URL)
 OWNER = config.OWNER_ID
 _boot_ = time.time()
-clonedb = None
-def dbb():
-    global db
-    global clonedb
-    clonedb = {}
-    db = {}
+
+
+clonedb = {}
+db = {}
 
 
 
