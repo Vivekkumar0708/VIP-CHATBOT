@@ -10,18 +10,15 @@ from nexichat.modules.Clone import restart_bots
 
 
 async def anony_boot():
+    await nexichat.start()
     try:
-        await nexichat.start()
-
         await restart_bots()
-
-    except Exception as ex:
-        LOGGER.error(ex)
-
+    except Exception:
+        pass
     for all_module in ALL_MODULES:
         importlib.import_module("nexichat.modules." + all_module)
-        LOGGER.info(f"Successfully imported : {all_module}")
-    LOGGER.info(f"@{nexichat.username} Started.")
+        LOGGER.info(f"Successfully imported All Modules")
+    LOGGER.info(f"{nexichat.name} Started.")
     try:
         await nexichat.send_message(int(OWNER_ID), f"{nexichat.mention} has started")
     except Exception as ex:
