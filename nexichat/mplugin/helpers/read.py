@@ -1,7 +1,5 @@
-from config import OWNER_USERNAME, SUPPORT_GRP
+from config import SUPPORT_GRP
 from nexichat import nexichat
-from pyrogram import Client, filters
-
 
 
 START = """**

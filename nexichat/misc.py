@@ -1,8 +1,9 @@
 import time
-import logging
 import asyncio
+import logging
 
 from . import boot
+
 
 logging.basicConfig(
     format="[%(asctime)s - %(levelname)s] - %(name)s - %(message)s",
@@ -17,6 +18,7 @@ logging.getLogger("apscheduler").setLevel(logging.ERROR)
 
 LOGGER = logging.getLogger(__name__)
 
+
 async def get_uptime():
     def _get_uptime():
 
@@ -28,11 +30,12 @@ async def get_uptime():
         seconds = int(elapsed_time % 60)
 
         output = (
-            (f"{hours} hrs " if hours > 0 else "") +
-            (f"{minutes} minutes " if minutes > 0 else "") +
-            f"{seconds} seconds"
+            (f"{hours} hrs " if hours > 0 else "")
+            + (f"{minutes} minutes " if minutes > 0 else "")
+            + f"{seconds} seconds"
         )
 
         return output.strip()
+
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _get_uptime)

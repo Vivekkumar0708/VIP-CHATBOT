@@ -1,5 +1,7 @@
 import random
+
 from motor.motor_asyncio import AsyncIOMotorClient as MongoCli
+
 
 CHAT_STORAGE = [
     "mongodb+srv://chatbot1:a@cluster0.pxbu0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
@@ -17,4 +19,4 @@ CHAT_STORAGE = [
 VIPBOY = MongoCli(random.choice(CHAT_STORAGE))
 chatdb = VIPBOY.Anonymous
 chatai = chatdb.Word.WordDb
-storeai = VIPBOY.Anonymous.Word.NewWordDb  
+storeai = VIPBOY.Anonymous.Word.NewWordDb

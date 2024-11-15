@@ -1,6 +1,8 @@
 from nexichat import db
 
+
 chatsdb = db.chatsdb
+
 
 async def get_served_chats() -> list:
     chats = chatsdb.find({"chat_id": {"$lt": 0}})

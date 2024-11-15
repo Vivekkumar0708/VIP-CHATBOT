@@ -1,21 +1,26 @@
-import logging
 import os
-from pyrogram.enums import ParseMode
+import logging
+
 from pyrogram import Client, filters
-from pyrogram.errors.exceptions.bad_request_400 import AccessTokenExpired, AccessTokenInvalid
-import config
-from nexichat.mplugin.helpers import is_owner
-from config import API_HASH, API_ID, OWNER_ID
+from pyrogram.errors.exceptions.bad_request_400 import (
+    AccessTokenExpired,
+    AccessTokenInvalid,
+)
+
+from config import API_ID, API_HASH, OWNER_ID
 from nexichat import CLONE_OWNERS
-from nexichat import nexichat as app
 from nexichat import db as mongodb
+from nexichat import nexichat as app
+
 
 CLONES = set()
 cloneownerdb = mongodb.cloneownerdb
 clonebotdb = mongodb.clonebotdb
 
+
 async def save_clonebot_owner(bot_id, user_id):
     await cloneownerdb.insert_one({"bot_id": bot_id, "user_id": user_id})
+
 
 @Client.on_message(filters.command(["clone", "host", "deploy"]))
 async def clone_txt(client, message):
@@ -23,13 +28,20 @@ async def clone_txt(client, message):
         bot_token = message.text.split("/clone", 1)[1].strip()
         mi = await message.reply_text("Please wait while I check the bot token.")
         try:
-            ai = Client(bot_token, API_ID, API_HASH, bot_token=bot_token, plugins=dict(root="nexichat/mplugin"))
+            ai = Client(
+                bot_token,
+                API_ID,
+                API_HASH,
+                bot_token=bot_token,
+                plugins=dict(root="nexichat/mplugin"),
+            )
             await ai.start()
             bot = await ai.get_me()
             bot_id = bot.id
             user_id = message.from_user.id
             CLONE_OWNERS[bot_id] = user_id
-            await ai.set_bot_commands([
+            await ai.set_bot_commands(
+                [
                     BotCommand("start", "Start the bot"),
                     BotCommand("help", "Get the help menu"),
                     BotCommand("clone", "Make your own chatbot"),
@@ -43,7 +55,8 @@ async def clone_txt(client, message):
                     BotCommand("status", "Check chatbot enable or disable in chat"),
                     BotCommand("shayri", "Get random shayri for love"),
                     BotCommand("repo", "Get chatbot source code"),
-                ])
+                ]
+            )
         except (AccessTokenExpired, AccessTokenInvalid):
             await mi.edit_text("**Invalid bot token. Please provide a valid one.**")
             return
@@ -53,7 +66,9 @@ async def clone_txt(client, message):
                 await mi.edit_text("**🤖 Your bot is already cloned ✅**")
                 return
 
-        await mi.edit_text("**Cloning process started. Please wait for the bot to start.**")
+        await mi.edit_text(
+            "**Cloning process started. Please wait for the bot to start.**"
+        )
         try:
             details = {
                 "bot_id": bot.id,
@@ -65,7 +80,8 @@ async def clone_txt(client, message):
             }
 
             await app.send_message(
-                int(OWNER_ID), f"**#New_Clone**\n\n**Bot:- @{bot.username}**\n\n**Details:-**\n{details}"
+                int(OWNER_ID),
+                f"**#New_Clone**\n\n**Bot:- @{bot.username}**\n\n**Details:-**\n{details}",
             )
 
             await clonebotdb.insert_one(details)
@@ -81,7 +97,9 @@ async def clone_txt(client, message):
                 f"⚠️ <b>Error:</b>\n\n<code>{e}</code>\n\n**Forward this message to @THE_VIP_BOY_OP for assistance**"
             )
     else:
-        await message.reply_text("**Provide Bot Token after /clone Command from @Botfather.**")
+        await message.reply_text(
+            "**Provide Bot Token after /clone Command from @Botfather.**"
+        )
 
 
 @Client.on_message(filters.command("cloned"))
@@ -103,13 +121,25 @@ async def list_cloned_bots(client, message):
         logging.exception(e)
         await message.reply_text("**An error occurred while listing cloned bots.**")
 
+
 @Client.on_message(
-    filters.command(["deletecloned", "delcloned", "delclone", "deleteclone", "removeclone", "cancelclone"])
+    filters.command(
+        [
+            "deletecloned",
+            "delcloned",
+            "delclone",
+            "deleteclone",
+            "removeclone",
+            "cancelclone",
+        ]
+    )
 )
 async def delete_cloned_bot(client, message):
     try:
         if len(message.command) < 2:
-            await message.reply_text("**⚠️ Please provide the bot token after the command.**")
+            await message.reply_text(
+                "**⚠️ Please provide the bot token after the command.**"
+            )
             return
 
         bot_token = " ".join(message.command[1:])
@@ -124,9 +154,13 @@ async def delete_cloned_bot(client, message):
             )
             os.system(f"kill -9 {os.getpid()} && bash start")
         else:
-            await message.reply_text("**⚠️ The provided bot token is not in the cloned list.**")
+            await message.reply_text(
+                "**⚠️ The provided bot token is not in the cloned list.**"
+            )
     except Exception as e:
-        await message.reply_text(f"**An error occurred while deleting the cloned bot:** {e}")
+        await message.reply_text(
+            f"**An error occurred while deleting the cloned bot:** {e}"
+        )
         logging.exception(e)
 
 

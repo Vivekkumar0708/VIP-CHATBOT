@@ -1,33 +1,24 @@
-import random
-from pymongo import MongoClient
-from pyrogram import Client, filters
-from pyrogram.errors import MessageEmpty
-from pyrogram.enums import ChatAction
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
-from deep_translator import GoogleTranslator
-from nexichat.database.chats import add_served_chat
-from nexichat.database.users import add_served_user
-from config import MONGO_URL
-from nexichat import nexichat, mongo
-from pyrogram.enums import ChatMemberStatus as CMS
-from pyrogram.types import CallbackQuery
-import asyncio
-import config
-from nexichat import LOGGER, nexichat, db
-from nexichat.mplugin.helpers import chatai
+from pyrogram import Client
+from pyrogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+
+from nexichat import LOGGER, db
 from nexichat.mplugin.helpers import (
-    ABOUT_BTN,
-    ABOUT_READ,
-    ADMIN_READ,
     BACK,
-    CHATBOT_BACK,
-    CHATBOT_READ,
+    START,
     DEV_OP,
     HELP_BTN,
+    ABOUT_BTN,
     HELP_READ,
-    MUSIC_BACK_BTN,
+    ABOUT_READ,
+    ADMIN_READ,
     SOURCE_READ,
-    START,
+    CHATBOT_BACK,
+    CHATBOT_READ,
+    MUSIC_BACK_BTN,
     TOOLS_DATA_READ,
     languages,
 )
@@ -36,11 +27,14 @@ from nexichat.mplugin.helpers import (
 lang_db = db.ChatLangDb.LangCollection
 status_db = db.chatbot_status_db.status
 
+
 def generate_language_buttons(languages):
     buttons = []
     current_row = []
     for lang, code in languages.items():
-        current_row.append(InlineKeyboardButton(lang.capitalize(), callback_data=f'setlang_{code}'))
+        current_row.append(
+            InlineKeyboardButton(lang.capitalize(), callback_data=f"setlang_{code}")
+        )
         if len(current_row) == 4:
             buttons.append(current_row)
             current_row = []
@@ -127,7 +121,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
     # Enable chatbot for the chat
     elif query.data == "enable_chatbot":
         chat_id = query.message.chat.id
-        status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "enabled"}}, upsert=True)
+        status_db.update_one(
+            {"chat_id": chat_id}, {"$set": {"status": "enabled"}}, upsert=True
+        )
         await query.answer("Chatbot enabled ✅", show_alert=True)
         await query.edit_message_text(
             f"Chat: {query.message.chat.title}\n**Chatbot has been enabled.**"
@@ -136,7 +132,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
     # Disable chatbot for the chat
     elif query.data == "disable_chatbot":
         chat_id = query.message.chat.id
-        status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "disabled"}}, upsert=True)
+        status_db.update_one(
+            {"chat_id": chat_id}, {"$set": {"status": "disabled"}}, upsert=True
+        )
         await query.answer("Chatbot disabled!", show_alert=True)
         await query.edit_message_text(
             f"Chat: {query.message.chat.title}\n**Chatbot has been disabled.**"
@@ -147,23 +145,36 @@ async def cb_handler(client: Client, query: CallbackQuery):
         lang_code = query.data.split("_")[1]
         chat_id = query.message.chat.id
         if lang_code in languages.values():
-            lang_db.update_one({"chat_id": chat_id}, {"$set": {"language": lang_code}}, upsert=True)
-            await query.answer(f"Your chat language has been set to {lang_code.title()}.", show_alert=True)
-            await query.message.edit_text(f"Chat language has been set to {lang_code.title()}.")
+            lang_db.update_one(
+                {"chat_id": chat_id}, {"$set": {"language": lang_code}}, upsert=True
+            )
+            await query.answer(
+                f"Your chat language has been set to {lang_code.title()}.",
+                show_alert=True,
+            )
+            await query.message.edit_text(
+                f"Chat language has been set to {lang_code.title()}."
+            )
         else:
             await query.answer("Invalid language selection.", show_alert=True)
 
     # Reset language selection to mix language
     elif query.data == "nolang":
         chat_id = query.message.chat.id
-        lang_db.update_one({"chat_id": chat_id}, {"$set": {"language": "nolang"}}, upsert=True)
-        await query.answer("Bot language has been reset to mix language.", show_alert=True)
-        await query.message.edit_text("**Bot language has been reset to mix language.**")
+        lang_db.update_one(
+            {"chat_id": chat_id}, {"$set": {"language": "nolang"}}, upsert=True
+        )
+        await query.answer(
+            "Bot language has been reset to mix language.", show_alert=True
+        )
+        await query.message.edit_text(
+            "**Bot language has been reset to mix language.**"
+        )
 
     # Choose language for the chatbot
     elif query.data == "choose_lang":
         await query.answer("Choose chatbot language for this chat.", show_alert=True)
         await query.message.edit_text(
             "**Please select your preferred language for the chatbot.**",
-            reply_markup=generate_language_buttons(languages)
+            reply_markup=generate_language_buttons(languages),
         )

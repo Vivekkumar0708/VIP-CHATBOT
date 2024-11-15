@@ -1,35 +1,39 @@
+import time
+import random
 import asyncio
 import logging
-import random
-import time
-import psutil
-import config
-from nexichat import _boot_
-from nexichat.misc import get_uptime
-from nexichat.mplugin.helpers import is_owner
-from nexichat import mongo
 from datetime import datetime
-from pymongo import MongoClient
-from pyrogram.enums import ChatType
+
+import psutil
 from pyrogram import Client, filters
-from nexichat import CLONE_OWNERS
-from config import OWNER_ID, MONGO_URL, OWNER_USERNAME
+from pyrogram.enums import ChatType
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.errors import FloodWait, ChatAdminRequired
-from nexichat.database.chats import get_served_chats, add_served_chat
-from nexichat.database.users import get_served_users, add_served_user
-from nexichat.database.clonestats import get_served_cchats, get_served_cusers, add_served_cuser, add_served_cchat
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, CallbackQuery
+
+from config import OWNER_ID, OWNER_USERNAME
+from nexichat import CLONE_OWNERS
+from nexichat.misc import get_uptime
+from nexichat.database.chats import add_served_chat
+from nexichat.database.users import add_served_user
 from nexichat.mplugin.helpers import (
     START,
-    START_BOT,
     PNG_BTN,
-    CLOSE_BTN,
     HELP_BTN,
+    CLOSE_BTN,
     HELP_BUTN,
     HELP_READ,
+    START_BOT,
     HELP_START,
     SOURCE_READ,
+    is_owner,
 )
+from nexichat.database.clonestats import (
+    add_served_cchat,
+    add_served_cuser,
+    get_served_cchats,
+    get_served_cusers,
+)
+
 
 GSTART = """**ʜᴇʏ ᴅᴇᴀʀ {}**\n\n**ᴛʜᴀɴᴋs ғᴏʀ sᴛᴀʀᴛ ᴍᴇ ɪɴ ɢʀᴏᴜᴘ ʏᴏᴜ ᴄᴀɴ ᴄʜᴀɴɢᴇ ʟᴀɴɢᴜᴀɢᴇ ʙʏ ᴄʟɪᴄᴋ ᴏɴ ɢɪᴠᴇɴ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs.**\n**ᴄʟɪᴄᴋ ᴀɴᴅ sᴇʟᴇᴄᴛ ʏᴏᴜʀ ғᴀᴠᴏᴜʀɪᴛᴇ ʟᴀɴɢᴜᴀɢᴇ ᴛᴏ sᴇᴛ ᴄʜᴀᴛ ʟᴀɴɢᴜᴀɢᴇ ғᴏʀ ʙᴏᴛ ʀᴇᴘʟʏ.**\n\n**ᴛʜᴀɴᴋ ʏᴏᴜ ᴘʟᴇᴀsᴇ ᴇɴɪᴏʏ.**"""
 STICKER = [
@@ -71,14 +75,12 @@ IMG = [
 ]
 
 
-
 from nexichat import db
+
 
 chatai = db.Word.WordDb
 lang_db = db.ChatLangDb.LangCollection
 status_db = db.ChatBotStatusDb.StatusCollection
-
-
 
 
 async def bot_sys_stats():
@@ -90,7 +92,7 @@ async def bot_sys_stats():
     RAM = f"{mem}%"
     DISK = f"{disk}%"
     return UP, CPU, RAM, DISK
-    
+
 
 async def set_default_status(chat_id):
     try:
@@ -98,9 +100,6 @@ async def set_default_status(chat_id):
             await status_db.insert_one({"chat_id": chat_id, "status": "enabled"})
     except Exception as e:
         print(f"Error setting default status for chat {chat_id}: {e}")
-
-
-
 
 
 @Client.on_message(filters.new_chat_members)
@@ -116,17 +115,27 @@ async def welcomejej(client, message: Message):
         for member in message.new_chat_members:
             if member.id == client.me.id:
                 try:
-                    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("sᴇʟᴇᴄᴛ ʟᴀɴɢᴜᴀɢᴇ", callback_data="choose_lang")]])    
-                    await message.reply_text(text="**тнαикѕ ꜰᴏʀ ᴀᴅᴅɪɴɢ ᴍᴇ ɪɴ ᴛʜɪꜱ ɢʀᴏᴜᴩ.**\n\n**ᴋɪɴᴅʟʏ  ꜱᴇʟᴇᴄᴛ  ʙᴏᴛ  ʟᴀɴɢᴜᴀɢᴇ  ꜰᴏʀ  ᴛʜɪꜱ  ɢʀᴏᴜᴩ  ʙʏ  ᴛʏᴩᴇ  ☞  /lang**", reply_markup=reply_markup)
+                    reply_markup = InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "sᴇʟᴇᴄᴛ ʟᴀɴɢᴜᴀɢᴇ", callback_data="choose_lang"
+                                )
+                            ]
+                        ]
+                    )
+                    await message.reply_text(
+                        text="**тнαикѕ ꜰᴏʀ ᴀᴅᴅɪɴɢ ᴍᴇ ɪɴ ᴛʜɪꜱ ɢʀᴏᴜᴩ.**\n\n**ᴋɪɴᴅʟʏ  ꜱᴇʟᴇᴄᴛ  ʙᴏᴛ  ʟᴀɴɢᴜᴀɢᴇ  ꜰᴏʀ  ᴛʜɪꜱ  ɢʀᴏᴜᴩ  ʙʏ  ᴛʏᴩᴇ  ☞  /lang**",
+                        reply_markup=reply_markup,
+                    )
                 except Exception as e:
                     print(f"{e}")
-                    pass
                 try:
                     invitelink = await client.export_chat_invite_link(message.chat.id)
                     link = f"[ɢᴇᴛ ʟɪɴᴋ]({invitelink})"
                 except ChatAdminRequired:
                     link = "No Link"
-                
+
                 try:
                     groups_photo = await client.download_media(
                         chat.photo.big_file_id, file_name=f"chatpp{chat.id}.png"
@@ -155,15 +164,22 @@ async def welcomejej(client, message: Message):
                 try:
                     bot_id = client.me.id
                     owner_id = CLONE_OWNERS.get(bot_id)
-                    
+
                     if owner_id:
                         await client.send_photo(
                             int(owner_id),
                             photo=chat_photo,
                             caption=msg,
                             reply_markup=InlineKeyboardMarkup(
-                                [[InlineKeyboardButton(f"{message.from_user.first_name}", user_id=message.from_user.id)]]
-                            )
+                                [
+                                    [
+                                        InlineKeyboardButton(
+                                            f"{message.from_user.first_name}",
+                                            user_id=message.from_user.id,
+                                        )
+                                    ]
+                                ]
+                            ),
                         )
                 except Exception as e:
                     print(f"Err: {e}")
@@ -171,10 +187,11 @@ async def welcomejej(client, message: Message):
         print(f"Err: {e}")
 
 
-from pathlib import Path
+import io
 import os
 import time
-import io
+from pathlib import Path
+
 
 @Client.on_message(filters.command(["ls"]) & filters.user(int(OWNER_ID)))
 async def ls(client: Client, m: Message):
@@ -204,11 +221,15 @@ async def ls(client: Client, m: Message):
                     files += f"🎵`{contents}`\n"
                 elif str(contents).endswith((".opus")):
                     files += f"🎙`{contents}`\n"
-                elif str(contents).endswith((".mkv", ".mp4", ".webm", ".avi", ".mov", ".flv")):
+                elif str(contents).endswith(
+                    (".mkv", ".mp4", ".webm", ".avi", ".mov", ".flv")
+                ):
                     files += f"🎞`{contents}`\n"
                 elif str(contents).endswith((".zip", ".tar", ".tar.gz", ".rar")):
                     files += f"🗜`{contents}`\n"
-                elif str(contents).endswith((".jpg", ".jpeg", ".png", ".gif", ".bmp", ".ico")):
+                elif str(contents).endswith(
+                    (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".ico")
+                ):
                     files += f"🖼`{contents}`\n"
                 else:
                     files += f"📄`{contents}`\n"
@@ -249,20 +270,28 @@ async def ls(client: Client, m: Message):
         await m.reply_text(msg)
 
 
-
 @Client.on_message(filters.command(["start", "aistart"]))
 async def start(client: Client, m: Message):
     bot_id = client.me.id
     users = len(await get_served_cusers(bot_id))
     chats = len(await get_served_cchats(bot_id))
-    
+
     if m.chat.type == ChatType.PRIVATE:
         accha = await m.reply_text(
             text=random.choice(EMOJIOS),
         )
-        
+
         animation_steps = [
-            "⚡ᴅ", "⚡ᴅι", "⚡ᴅιи", "⚡ᴅιиg", "⚡ᴅιиg ᴅ", "⚡ᴅιиg ᴅσ", "⚡ᴅιиg ᴅσи", "⚡ᴅιиg ᴅσиg", "⚡ᴅιиg ᴅσиg ꨄ︎", "⚡sᴛαятɪɴɢ..."
+            "⚡ᴅ",
+            "⚡ᴅι",
+            "⚡ᴅιи",
+            "⚡ᴅιиg",
+            "⚡ᴅιиg ᴅ",
+            "⚡ᴅιиg ᴅσ",
+            "⚡ᴅιиg ᴅσи",
+            "⚡ᴅιиg ᴅσиg",
+            "⚡ᴅιиg ᴅσиg ꨄ︎",
+            "⚡sᴛαятɪɴɢ...",
         ]
 
         for step in animation_steps:
@@ -270,9 +299,9 @@ async def start(client: Client, m: Message):
             await asyncio.sleep(0.01)
 
         await accha.delete()
-        
+
         umm = await m.reply_sticker(sticker=random.choice(STICKER))
-        chat_photo = BOT  
+        chat_photo = BOT
         if m.chat.photo:
             try:
                 userss_photo = await client.download_media(m.chat.photo.big_file_id)
@@ -280,26 +309,32 @@ async def start(client: Client, m: Message):
                 if userss_photo:
                     chat_photo = userss_photo
             except AttributeError:
-                chat_photo = BOT  
+                chat_photo = BOT
 
         users = len(await get_served_cusers(bot_id))
         chats = len(await get_served_cchats(bot_id))
         UP, CPU, RAM, DISK = await bot_sys_stats()
-        await m.reply_photo(photo=chat_photo, caption=START.format(users, chats, UP), reply_markup=InlineKeyboardMarkup(START_BOT))
-        
-        await add_served_cuser(bot_id, m.chat.id) 
-        await add_served_user(m.chat.id)
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(f"{m.chat.first_name}", user_id=m.chat.id)]])
+        await m.reply_photo(
+            photo=chat_photo,
+            caption=START.format(users, chats, UP),
+            reply_markup=InlineKeyboardMarkup(START_BOT),
+        )
 
-        owner_id = CLONE_OWNERS.get(bot_id) 
+        await add_served_cuser(bot_id, m.chat.id)
+        await add_served_user(m.chat.id)
+        keyboard = InlineKeyboardMarkup(
+            [[InlineKeyboardButton(f"{m.chat.first_name}", user_id=m.chat.id)]]
+        )
+
+        owner_id = CLONE_OWNERS.get(bot_id)
         if owner_id:
             await client.send_photo(
                 int(owner_id),
                 photo=chat_photo,
                 caption=f"{m.from_user.mention} ʜᴀs sᴛᴀʀᴛᴇᴅ ʙᴏᴛ. \n\n**ɴᴀᴍᴇ :** {m.chat.first_name}\n**ᴜsᴇʀɴᴀᴍᴇ :** @{m.chat.username}\n**ɪᴅ :** {m.chat.id}\n\n**ᴛᴏᴛᴀʟ ᴜsᴇʀs :** {users}",
-                reply_markup=keyboard
+                reply_markup=keyboard,
             )
-        
+
     else:
         await m.reply_photo(
             photo=random.choice(IMG),
@@ -308,6 +343,7 @@ async def start(client: Client, m: Message):
         )
         await add_served_cchat(bot_id, m.chat.id)
         await add_served_chat(m.chat.id)
+
 
 @Client.on_message(filters.command("help"))
 async def help(client: Client, m: Message):
@@ -338,8 +374,6 @@ async def repo(client: Client, m: Message):
     )
 
 
-
-
 @Client.on_message(filters.command("ping"))
 async def ping(client: Client, message: Message):
     bot_id = client.me.id
@@ -368,7 +402,7 @@ async def stats(cli: Client, message: Message):
     bot_id = (await cli.get_me()).id
     users = len(await get_served_cusers(bot_id))
     chats = len(await get_served_cchats(bot_id))
-    
+
     await message.reply_text(
         f"""{(await cli.get_me()).mention} Chatbot Stats:
 
@@ -378,8 +412,6 @@ async def stats(cli: Client, message: Message):
 
 
 from pyrogram.enums import ParseMode
-
-from nexichat import nexichat
 
 
 @Client.on_message(filters.command("id"))
@@ -462,9 +494,7 @@ async def broadcast_message(client, message):
         except IndexError:
             query = message.text.strip()
         except Exception as eff:
-            return await message.reply_text(
-                f"**Error**: {eff}"
-            )
+            return await message.reply_text(f"**Error**: {eff}")
         try:
             if message.reply_to_message:
                 broadcast_content = message.reply_to_message
@@ -480,7 +510,7 @@ async def broadcast_message(client, message):
                     return await message.reply_text(
                         "**Please provide text after the command or reply to a message for broadcasting.**"
                     )
-                
+
                 flags = {
                     "-pin": "-pin" in query,
                     "-pinloud": "-pinloud" in query,
@@ -496,10 +526,8 @@ async def broadcast_message(client, message):
                         "Please provide a valid text message or a flag: -pin, -nogroup, -pinloud, -user"
                     )
 
-                
                 broadcast_content = query
                 broadcast_type = "text"
-            
 
             await message.reply_text("**Started broadcasting...**")
 
@@ -544,7 +572,7 @@ async def broadcast_message(client, message):
                             continue
                         await asyncio.sleep(flood_time)
                     except Exception as e:
-                        
+
                         continue
 
                 await message.reply_text(
@@ -580,13 +608,10 @@ async def broadcast_message(client, message):
                             continue
                         await asyncio.sleep(flood_time)
                     except Exception as e:
-                        
+
                         continue
 
                 await message.reply_text(f"**Broadcasted to {susr} users.**")
 
         finally:
             IS_BROADCASTING = False
-
-
-    

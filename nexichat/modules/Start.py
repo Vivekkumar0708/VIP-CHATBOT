@@ -1,32 +1,33 @@
+import time
+import random
 import asyncio
 import logging
-import random
-import time
-import psutil
-import config
-from nexichat import _boot_
-from nexichat.misc import get_uptime
-from nexichat import nexichat, mongo
 from datetime import datetime
-from pymongo import MongoClient
-from pyrogram.enums import ChatType
+
+import psutil
 from pyrogram import Client, filters
-from config import OWNER_ID, MONGO_URL, OWNER_USERNAME
+from pyrogram.enums import ChatType
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.errors import FloodWait, ChatAdminRequired
-from nexichat.database.chats import get_served_chats, add_served_chat
-from nexichat.database.users import get_served_users, add_served_user
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, CallbackQuery
+
+import config
+from config import OWNER_ID, OWNER_USERNAME
+from nexichat import nexichat
+from nexichat.misc import get_uptime
+from nexichat.database.chats import add_served_chat, get_served_chats
+from nexichat.database.users import add_served_user, get_served_users
 from nexichat.modules.helpers import (
     START,
-    START_BOT,
     PNG_BTN,
-    CLOSE_BTN,
     HELP_BTN,
+    CLOSE_BTN,
     HELP_BUTN,
     HELP_READ,
+    START_BOT,
     HELP_START,
     SOURCE_READ,
 )
+
 
 GSTART = """**ʜᴇʏ ᴅᴇᴀʀ {}**\n\n**ᴛʜᴀɴᴋs ғᴏʀ sᴛᴀʀᴛ ᴍᴇ ɪɴ ɢʀᴏᴜᴘ ʏᴏᴜ ᴄᴀɴ ᴄʜᴀɴɢᴇ ʟᴀɴɢᴜᴀɢᴇ ʙʏ ᴄʟɪᴄᴋ ᴏɴ ɢɪᴠᴇɴ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs.**\n**ᴄʟɪᴄᴋ ᴀɴᴅ sᴇʟᴇᴄᴛ ʏᴏᴜʀ ғᴀᴠᴏᴜʀɪᴛᴇ ʟᴀɴɢᴜᴀɢᴇ ᴛᴏ sᴇᴛ ᴄʜᴀᴛ ʟᴀɴɢᴜᴀɢᴇ ғᴏʀ ʙᴏᴛ ʀᴇᴘʟʏ.**\n\n**ᴛʜᴀɴᴋ ʏᴏᴜ ᴘʟᴇᴀsᴇ ᴇɴɪᴏʏ.**"""
 STICKER = [
@@ -68,14 +69,12 @@ IMG = [
 ]
 
 
-
 from nexichat import db
+
 
 chatai = db.Word.WordDb
 lang_db = db.ChatLangDb.LangCollection
 status_db = db.ChatBotStatusDb.StatusCollection
-
-
 
 
 async def bot_sys_stats():
@@ -87,7 +86,7 @@ async def bot_sys_stats():
     RAM = f"{mem}%"
     DISK = f"{disk}%"
     return UP, CPU, RAM, DISK
-    
+
 
 async def set_default_status(chat_id):
     try:
@@ -96,31 +95,36 @@ async def set_default_status(chat_id):
     except Exception as e:
         print(f"Error setting default status for chat {chat_id}: {e}")
 
-from langdetect import detect
+
 from collections import Counter
+
+from langdetect import detect
 from pyrogram.types import Chat
+
 
 async def set_group_language(chat: Chat):
     messages = []
-    
+
     async for message in nexichat.get_chat_history(chat.id, limit=50):
         if message.text and not message.from_user.is_bot:
             messages.append(message.text)
 
     if not messages:
-        return  
-        
+        return
+
     lang_counts = Counter(detect(text) for text in messages if text)
     most_common_lang, max_count = lang_counts.most_common(1)[0]
     max_lang_percentage = (max_count / len(messages)) * 100
 
-    
     if max_lang_percentage > 50:
-        await lang_db.update_one({"chat_id": chat.id}, {"$set": {"language": most_common_lang}}, upsert=True)
-        await nexichat.send_message(
-            chat.id, 
-            f"This chat language has been set to {most_common_lang.title()} ({most_common_lang})."
+        await lang_db.update_one(
+            {"chat_id": chat.id}, {"$set": {"language": most_common_lang}}, upsert=True
         )
+        await nexichat.send_message(
+            chat.id,
+            f"This chat language has been set to {most_common_lang.title()} ({most_common_lang}).",
+        )
+
 
 @nexichat.on_message(filters.new_chat_members)
 async def welcomejej(client, message: Message):
@@ -131,21 +135,31 @@ async def welcomejej(client, message: Message):
     chats = len(await get_served_chats())
     try:
         for member in message.new_chat_members:
-            
+
             if member.id == nexichat.id:
                 try:
-                    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("sᴇʟᴇᴄᴛ ʟᴀɴɢᴜᴀɢᴇ", callback_data="choose_lang")]])    
-                    await message.reply_text(text="**тнαикѕ ꜰᴏʀ ᴀᴅᴅɪɴɢ ᴍᴇ ɪɴ ᴛʜɪꜱ ɢʀᴏᴜᴩ.**\n\n**ᴋɪɴᴅʟʏ  ꜱᴇʟᴇᴄᴛ  ʙᴏᴛ  ʟᴀɴɢᴜᴀɢᴇ  ꜰᴏʀ  ᴛʜɪꜱ  ɢʀᴏᴜᴩ  ʙʏ  ᴛʏᴩᴇ  ☞  /lang**", reply_markup=reply_markup)
+                    reply_markup = InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "sᴇʟᴇᴄᴛ ʟᴀɴɢᴜᴀɢᴇ", callback_data="choose_lang"
+                                )
+                            ]
+                        ]
+                    )
+                    await message.reply_text(
+                        text="**тнαикѕ ꜰᴏʀ ᴀᴅᴅɪɴɢ ᴍᴇ ɪɴ ᴛʜɪꜱ ɢʀᴏᴜᴩ.**\n\n**ᴋɪɴᴅʟʏ  ꜱᴇʟᴇᴄᴛ  ʙᴏᴛ  ʟᴀɴɢᴜᴀɢᴇ  ꜰᴏʀ  ᴛʜɪꜱ  ɢʀᴏᴜᴩ  ʙʏ  ᴛʏᴩᴇ  ☞  /lang**",
+                        reply_markup=reply_markup,
+                    )
                 except Exception as e:
                     print(f"{e}")
-                    pass
                 try:
                     invitelink = await nexichat.export_chat_invite_link(message.chat.id)
-                                                                        
+
                     link = f"[ɢᴇᴛ ʟɪɴᴋ]({invitelink})"
                 except ChatAdminRequired:
                     link = "No Link"
-                    
+
                 try:
                     groups_photo = await nexichat.download_media(
                         chat.photo.big_file_id, file_name=f"chatpp{chat.id}.png"
@@ -179,24 +193,44 @@ async def welcomejej(client, message: Message):
                             int(OWNER_ID),
                             photo=chat_photo,
                             caption=msg,
-                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(f"{message.from_user.first_name}", user_id=message.from_user.id)]]))
-                                
-                    
+                            reply_markup=InlineKeyboardMarkup(
+                                [
+                                    [
+                                        InlineKeyboardButton(
+                                            f"{message.from_user.first_name}",
+                                            user_id=message.from_user.id,
+                                        )
+                                    ]
+                                ]
+                            ),
+                        )
+
                 except Exception as e:
                     print(f"Please Provide me correct owner id for send logs")
                     await nexichat.send_photo(
                         int(OWNER_ID),
                         photo=chat_photo,
                         caption=msg,
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(f"{message.from_user.first_name}", user_id=message.from_user.id)]]))
+                        reply_markup=InlineKeyboardMarkup(
+                            [
+                                [
+                                    InlineKeyboardButton(
+                                        f"{message.from_user.first_name}",
+                                        user_id=message.from_user.id,
+                                    )
+                                ]
+                            ]
+                        ),
+                    )
     except Exception as e:
         print(f"Err: {e}")
 
 
-from pathlib import Path
+import io
 import os
 import time
-import io
+from pathlib import Path
+
 
 @nexichat.on_cmd(["ls"])
 async def ls(_, m: Message):
@@ -227,11 +261,15 @@ async def ls(_, m: Message):
                     files += f"🎵`{contents}`\n"
                 elif str(contents).endswith((".opus")):
                     files += f"🎙`{contents}`\n"
-                elif str(contents).endswith((".mkv", ".mp4", ".webm", ".avi", ".mov", ".flv")):
+                elif str(contents).endswith(
+                    (".mkv", ".mp4", ".webm", ".avi", ".mov", ".flv")
+                ):
                     files += f"🎞`{contents}`\n"
                 elif str(contents).endswith((".zip", ".tar", ".tar.gz", ".rar")):
                     files += f"🗜`{contents}`\n"
-                elif str(contents).endswith((".jpg", ".jpeg", ".png", ".gif", ".bmp", ".ico")):
+                elif str(contents).endswith(
+                    (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".ico")
+                ):
                     files += f"🖼`{contents}`\n"
                 else:
                     files += f"📄`{contents}`\n"
@@ -281,7 +319,7 @@ async def start(_, m: Message):
             text=random.choice(EMOJIOS),
         )
         await asyncio.sleep(0.5)
-        
+
         await accha.edit("**__ᴅ__**")
         await asyncio.sleep(0.01)
         await accha.edit("**__ᴅι__**")
@@ -324,9 +362,9 @@ async def start(_, m: Message):
         await asyncio.sleep(0.1)
         await accha.edit("**__ᴅιиg ᴅσиg ꨄ sтαятιиg.....__**")
         await accha.delete()
-        
+
         umm = await m.reply_sticker(sticker=random.choice(STICKER))
-        chat_photo = BOT  
+        chat_photo = BOT
         if m.chat.photo:
             try:
                 userss_photo = await nexichat.download_media(m.chat.photo.big_file_id)
@@ -334,16 +372,27 @@ async def start(_, m: Message):
                 if userss_photo:
                     chat_photo = userss_photo
             except AttributeError:
-                chat_photo = BOT  
+                chat_photo = BOT
 
         users = len(await get_served_users())
         chats = len(await get_served_chats())
         UP, CPU, RAM, DISK = await bot_sys_stats()
-        await m.reply_photo(photo=chat_photo, caption=START.format(nexichat.mention or "can't mention", users, chats, UP), reply_markup=InlineKeyboardMarkup(START_BOT))
+        await m.reply_photo(
+            photo=chat_photo,
+            caption=START.format(nexichat.mention or "can't mention", users, chats, UP),
+            reply_markup=InlineKeyboardMarkup(START_BOT),
+        )
         await add_served_user(m.chat.id)
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(f"{m.chat.first_name}", user_id=m.chat.id)]])
-        await nexichat.send_photo(int(OWNER_ID), photo=chat_photo, caption=f"{m.from_user.mention} ʜᴀs sᴛᴀʀᴛᴇᴅ ʙᴏᴛ. \n\n**ɴᴀᴍᴇ :** {m.chat.first_name}\n**ᴜsᴇʀɴᴀᴍᴇ :** @{m.chat.username}\n**ɪᴅ :** {m.chat.id}\n\n**ᴛᴏᴛᴀʟ ᴜsᴇʀs :** {users}", reply_markup=keyboard)
-        
+        keyboard = InlineKeyboardMarkup(
+            [[InlineKeyboardButton(f"{m.chat.first_name}", user_id=m.chat.id)]]
+        )
+        await nexichat.send_photo(
+            int(OWNER_ID),
+            photo=chat_photo,
+            caption=f"{m.from_user.mention} ʜᴀs sᴛᴀʀᴛᴇᴅ ʙᴏᴛ. \n\n**ɴᴀᴍᴇ :** {m.chat.first_name}\n**ᴜsᴇʀɴᴀᴍᴇ :** @{m.chat.username}\n**ɪᴅ :** {m.chat.id}\n\n**ᴛᴏᴛᴀʟ ᴜsᴇʀs :** {users}",
+            reply_markup=keyboard,
+        )
+
     else:
         await m.reply_photo(
             photo=random.choice(IMG),
@@ -378,8 +427,6 @@ async def repo(_, m: Message):
         reply_markup=InlineKeyboardMarkup(CLOSE_BTN),
         disable_web_page_preview=True,
     )
-
-
 
 
 @nexichat.on_cmd("ping")
@@ -494,9 +541,7 @@ async def broadcast_message(client, message):
         except IndexError:
             query = message.text.strip()
         except Exception as eff:
-            return await message.reply_text(
-                f"**Error**: {eff}"
-            )
+            return await message.reply_text(f"**Error**: {eff}")
         try:
             if message.reply_to_message:
                 broadcast_content = message.reply_to_message
@@ -512,7 +557,7 @@ async def broadcast_message(client, message):
                     return await message.reply_text(
                         "**Please provide text after the command or reply to a message for broadcasting.**"
                     )
-                
+
                 flags = {
                     "-pin": "-pin" in query,
                     "-pinloud": "-pinloud" in query,
@@ -528,10 +573,8 @@ async def broadcast_message(client, message):
                         "Please provide a valid text message or a flag: -pin, -nogroup, -pinloud, -user"
                     )
 
-                
                 broadcast_content = query
                 broadcast_type = "text"
-            
 
             await message.reply_text("**Started broadcasting...**")
 
@@ -576,7 +619,7 @@ async def broadcast_message(client, message):
                             continue
                         await asyncio.sleep(flood_time)
                     except Exception as e:
-                        
+
                         continue
 
                 await message.reply_text(
@@ -612,7 +655,7 @@ async def broadcast_message(client, message):
                             continue
                         await asyncio.sleep(flood_time)
                     except Exception as e:
-                        
+
                         continue
 
                 await message.reply_text(f"**Broadcasted to {susr} users.**")
@@ -621,14 +664,15 @@ async def broadcast_message(client, message):
             IS_BROADCASTING = False
 
 
-    
-from langdetect import detect, DetectorFactory, LangDetectException
 from pyrogram import Client, filters
+from langdetect import DetectorFactory, detect
 from pyrogram.types import Message
-from nexichat.modules.helpers import languages
-DetectorFactory.seed = 0  
+
+
+DetectorFactory.seed = 0
 
 from deep_translator import GoogleTranslator
+
 
 @nexichat.on_message(filters.command("check") & filters.reply)
 async def check_language(client: Client, message: Message):
@@ -639,9 +683,11 @@ async def check_language(client: Client, message: Message):
 
     try:
         # Try translating to English; this will help in identifying the language.
-        translator = GoogleTranslator(source='auto', target='en')
+        translator = GoogleTranslator(source="auto", target="en")
         translated_text = translator.translate(reply_text)
         detected_lang = translator.source
-        await message.reply(f"Detected Language: {detected_lang}\nTranslated Text: {translated_text}")
+        await message.reply(
+            f"Detected Language: {detected_lang}\nTranslated Text: {translated_text}"
+        )
     except Exception as e:
         await message.reply("Couldn't detect the language.")

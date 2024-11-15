@@ -1,20 +1,27 @@
 from nexichat import db as mongodb
 
+
 cloneownerdb = mongodb.cloneownerdb
 clonebotdb = mongodb.clonebotdb
-#chatsdb = mongodb.chats
-#usersdb = mongodb.users
+# chatsdb = mongodb.chats
+# usersdb = mongodb.users
+
 
 async def save_clonebot_owner(bot_id, user_id):
     await cloneownerdb.insert_one({"bot_id": bot_id, "user_id": user_id})
 
+
 def get_bot_users_collection(bot_id):
     from nexichat import db as mongodb
+
     return mongodb[f"{bot_id}_users"]
+
 
 def get_bot_chats_collection(bot_id):
     from nexichat import db as mongodb
+
     return mongodb[f"{bot_id}_chats"]
+
 
 async def is_served_cuser(bot_id, user_id: int) -> bool:
     usersdb = get_bot_users_collection(bot_id)
@@ -23,6 +30,7 @@ async def is_served_cuser(bot_id, user_id: int) -> bool:
         return False
     return True
 
+
 async def add_served_cuser(bot_id, user_id: int):
     usersdb = get_bot_users_collection(bot_id)
     is_served = await is_served_cuser(bot_id, user_id)
@@ -30,9 +38,11 @@ async def add_served_cuser(bot_id, user_id: int):
         return
     return await usersdb.insert_one({"user_id": user_id})
 
+
 async def get_served_cusers(bot_id) -> list:
     usersdb = get_bot_users_collection(bot_id)
     return await usersdb.find({"user_id": {"$gt": 0}}).to_list(length=None)
+
 
 async def is_served_cchat(bot_id, chat_id: int) -> bool:
     chatsdb = get_bot_chats_collection(bot_id)
@@ -41,12 +51,14 @@ async def is_served_cchat(bot_id, chat_id: int) -> bool:
         return False
     return True
 
+
 async def add_served_cchat(bot_id, chat_id: int):
     chatsdb = get_bot_chats_collection(bot_id)
     is_served = await is_served_cchat(bot_id, chat_id)
     if is_served:
         return
     return await chatsdb.insert_one({"chat_id": chat_id})
+
 
 async def get_served_cchats(bot_id) -> list:
     chatsdb = get_bot_chats_collection(bot_id)

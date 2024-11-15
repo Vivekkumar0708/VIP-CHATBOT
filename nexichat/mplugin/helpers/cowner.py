@@ -1,5 +1,6 @@
-from nexichat import CLONE_OWNERS
 from config import OWNER_ID
+from nexichat import CLONE_OWNERS
+
 
 def is_owner(client, user_id):
     bot_id = client.me.id

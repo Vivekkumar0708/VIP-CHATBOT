@@ -1,32 +1,16 @@
 import random
-from pymongo import MongoClient
+
 from pyrogram import Client, filters
-from pyrogram.errors import MessageEmpty
-from pyrogram.enums import ChatAction, ChatMemberStatus as CMS
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, CallbackQuery
+from pyrogram.types import Message
 from deep_translator import GoogleTranslator
+from pyrogram.errors import MessageEmpty
+
+from nexichat import db
+from nexichat.database import add_served_cchat, add_served_cuser
 from nexichat.database.chats import add_served_chat
 from nexichat.database.users import add_served_user
-from nexichat.database import add_served_cchat, add_served_cuser
-from config import MONGO_URL
-from nexichat import nexichat, mongo, LOGGER, db
-from nexichat.mplugin.helpers import chatai, CHATBOT_ON, languages
-from nexichat.modules.helpers import (
-    ABOUT_BTN,
-    ABOUT_READ,
-    ADMIN_READ,
-    BACK,
-    CHATBOT_BACK,
-    CHATBOT_READ,
-    DEV_OP,
-    HELP_BTN,
-    HELP_READ,
-    MUSIC_BACK_BTN,
-    SOURCE_READ,
-    START,
-    TOOLS_DATA_READ,
-)
-import asyncio
+from nexichat.mplugin.helpers import chatai
+
 
 translator = GoogleTranslator()
 
@@ -35,9 +19,11 @@ status_db = db.chatbot_status_db.status
 
 replies_cache = []
 
+
 async def load_replies_cache():
     global replies_cache
     replies_cache = await chatai.find().to_list(length=None)
+
 
 async def save_reply(original_message: Message, reply_message: Message):
     global replies_cache
@@ -85,30 +71,35 @@ async def save_reply(original_message: Message, reply_message: Message):
     except Exception as e:
         print(f"Error in save_reply: {e}")
 
+
 async def get_reply(word: str):
     global replies_cache
     if not replies_cache:
         await load_replies_cache()
-        
-    relevant_replies = [reply for reply in replies_cache if reply['word'] == word]
+
+    relevant_replies = [reply for reply in replies_cache if reply["word"] == word]
     if not relevant_replies:
         relevant_replies = replies_cache
     return random.choice(relevant_replies) if relevant_replies else None
 
+
 async def get_chat_language(chat_id):
     chat_lang = await lang_db.find_one({"chat_id": chat_id})
     return chat_lang["language"] if chat_lang and "language" in chat_lang else None
-    
+
+
 @Client.on_message(filters.incoming)
 async def chatbot_response(client: Client, message: Message):
     try:
         chat_id = message.chat.id
         chat_status = await status_db.find_one({"chat_id": chat_id})
-        
+
         if chat_status and chat_status.get("status") == "disabled":
             return
 
-        if message.text and any(message.text.startswith(prefix) for prefix in ["!", "/", ".", "?", "@", "#"]):
+        if message.text and any(
+            message.text.startswith(prefix) for prefix in ["!", "/", ".", "?", "@", "#"]
+        ):
             if message.chat.type in ["group", "supergroup"]:
                 await add_served_cchat(bot_user_id, message.chat.id)
                 return await add_served_chat(message.chat.id)
@@ -116,8 +107,10 @@ async def chatbot_response(client: Client, message: Message):
                 await add_served_cuser(bot_user_id, message.chat.id)
                 return await add_served_user(message.chat.id)
 
-        
-        if (message.reply_to_message and message.reply_to_message.from_user.id == client.me.id) or not message.reply_to_message:
+        if (
+            message.reply_to_message
+            and message.reply_to_message.from_user.id == client.me.id
+        ) or not message.reply_to_message:
             reply_data = await get_reply(message.text)
 
             if reply_data:
@@ -127,7 +120,9 @@ async def chatbot_response(client: Client, message: Message):
                 if not chat_lang or chat_lang == "nolang":
                     translated_text = response_text
                 else:
-                    translated_text = GoogleTranslator(source='auto', target=chat_lang).translate(response_text)
+                    translated_text = GoogleTranslator(
+                        source="auto", target=chat_lang
+                    ).translate(response_text)
                     if not translated_text:
                         translated_text = response_text
                 if reply_data["check"] == "sticker":

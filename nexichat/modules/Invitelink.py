@@ -1,11 +1,11 @@
 import os
 
 from pyrogram import Client, filters
-from pyrogram.errors import FloodWait
 from pyrogram.types import Message
+from pyrogram.errors import FloodWait
 
-from nexichat import nexichat
 from config import OWNER_ID
+from nexichat import nexichat
 
 
 @nexichat.on_message(filters.command("givelink") & filters.user(int(OWNER_ID)))
@@ -15,7 +15,12 @@ async def give_link_command(client, message):
     await message.reply_text(f"**Here's the invite link for this chat:**\n\n{link}")
 
 
-@nexichat.on_message(filters.command(["link", "invitelink"], prefixes=["/", "!", "%", ",", ".", "@", "#"]) & filters.user(int(OWNER_ID)))
+@nexichat.on_message(
+    filters.command(
+        ["link", "invitelink"], prefixes=["/", "!", "%", ",", ".", "@", "#"]
+    )
+    & filters.user(int(OWNER_ID))
+)
 async def link_command_handler(client: Client, message: Message):
     if len(message.command) != 2:
         await message.reply("**Invalid usage. Correct format: /link group_id**")
@@ -28,13 +33,17 @@ async def link_command_handler(client: Client, message: Message):
         chat = await client.get_chat(int(group_id))
 
         if chat is None:
-            await message.reply("**Unable to get information for the specified group ID.**")
+            await message.reply(
+                "**Unable to get information for the specified group ID.**"
+            )
             return
 
         try:
             invite_link = await client.export_chat_invite_link(chat.id)
         except FloodWait as e:
-            await message.reply(f"**FloodWait: {e.x} seconds. Retrying in {e.x} seconds.**")
+            await message.reply(
+                f"**FloodWait: {e.x} seconds. Retrying in {e.x} seconds.**"
+            )
             return
 
         group_data = {
