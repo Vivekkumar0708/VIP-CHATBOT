@@ -16,7 +16,7 @@ async def anony_boot():
     try:
         await nexichat.start()
 
-        asyncio.create_task(restart_bots())
+        await restart_bots()
 
     except Exception as ex:
         LOGGER.error(ex)
