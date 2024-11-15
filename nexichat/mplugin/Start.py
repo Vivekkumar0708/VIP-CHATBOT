@@ -5,7 +5,7 @@ import time
 import psutil
 import config
 from nexichat import _boot_
-from nexichat import get_readable_time
+from nexichat.misc import get_uptime
 from nexichat.mplugin.helpers import is_owner
 from nexichat import mongo
 from datetime import datetime
@@ -82,11 +82,10 @@ status_db = db.ChatBotStatusDb.StatusCollection
 
 
 async def bot_sys_stats():
-    bot_uptime = int(time.time() - _boot_)
     cpu = psutil.cpu_percent(interval=0.5)
     mem = psutil.virtual_memory().percent
     disk = psutil.disk_usage("/").percent
-    UP = f"{get_readable_time((bot_uptime))}"
+    UP = await get_uptime()
     CPU = f"{cpu}%"
     RAM = f"{mem}%"
     DISK = f"{disk}%"
