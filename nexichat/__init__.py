@@ -4,8 +4,9 @@ import logging
 import uvloop
 from Abg import patch
 from pyrogram import Client
-from motor.motor_asyncio import AsyncIOMotorClient
 from pyrogram.types import BotCommand
+from motor.motor_asyncio import AsyncIOMotorClient
+
 import config
 
 from .misc import LOGGER
@@ -48,13 +49,13 @@ class nexichat(Client):
                     BotCommand("ping", "Check if the bot is alive or dead"),
                     BotCommand("lang", "Select bot reply language"),
                     BotCommand("resetlang", "Reset to default bot reply lang"),
-                BotCommand("id", "Get users user_id"),
-                BotCommand("stats", "Check bot stats"),
-                BotCommand("gcast", "Broadcast any message to groups/users"),
-                BotCommand("chatbot", "Enable or disable chatbot"),
-                BotCommand("status", "Check chatbot enable or disable in chat"),
-                BotCommand("shayri", "Get random shayri for love"),
-                BotCommand("repo", "Get chatbot source code"),
+                    BotCommand("id", "Get users user_id"),
+                    BotCommand("stats", "Check bot stats"),
+                    BotCommand("gcast", "Broadcast any message to groups/users"),
+                    BotCommand("chatbot", "Enable or disable chatbot"),
+                    BotCommand("status", "Check chatbot enable or disable in chat"),
+                    BotCommand("shayri", "Get random shayri for love"),
+                    BotCommand("repo", "Get chatbot source code"),
                 ]
             )
             LOGGER.info("Bot commands set successfully.")
