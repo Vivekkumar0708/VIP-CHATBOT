@@ -1,10 +1,7 @@
 import asyncio
 import importlib
-import threading
 
-from flask import Flask
 from pyrogram import idle
-from pyrogram.types import BotCommand
 
 from config import OWNER_ID
 from nexichat import LOGGER, nexichat
@@ -33,6 +30,7 @@ async def anony_boot():
         )
 
     await idle()
+
 
 if __name__ == "__main__":
     asyncio.get_event_loop().run_until_complete(anony_boot())
